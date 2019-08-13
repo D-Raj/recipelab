@@ -1,0 +1,143 @@
+
+#ingredients-list {
+    height: auto;
+}
+
+
+
+#ingredients-list li {
+    list-style-type: none;
+    text-align: left;
+    border-bottom: 1px solid #ccc;
+    display: block;
+    text-decoration: none;
+    font-weight: bold;
+}
+#ingredients-list li span {
+    cursor: text;
+}
+#ingredients-list li a {
+    color: #f03;
+    display: none;
+    float: right;
+    text-decoration: none;
+}
+#ingredients-list li a:hover {
+    text-decoration: underline;
+}
+
+li.confidence-high {
+
+}
+
+li.confidence-medium {
+    background: lightpink;
+}
+
+li.confidence-low {
+    background: lightpink;
+}
+
+textarea {
+    resize: none;
+}
+
+#to_improve {
+
+}
+
+#no_match_found {
+    background: lightpink;
+    padding: 15px;
+    font-weight: bold;
+}
+
+ul.nutrition {
+    list-style: none;
+    padding-left: 0px;
+    width: 250px;
+}
+
+ul.nutrition ul {
+    list-style: none;
+    padding-left: 20px;
+}
+
+ul.nutrition li {
+    margin-bottom: 5px;
+}
+
+.nutrient-value {
+    float: right;
+}
+
+#no_match_found {
+    display: none;
+}
+
+
+.nutrition {
+    background-color: #faf2cc;
+    padding-top: 10px;
+}
+
+div.updated {
+    background: lightgrey;
+}
+
+li.mute {
+    background: grey;
+}
+
+div.nutrient-percent {
+    display: inline-block;
+    float: right;
+    text-align: center;
+    width: 40px;
+    margin-left: 7px;
+    min-height: 1px;
+}
+div.percent-border {
+    border: 1px solid #333333;
+}
+div.percent-bar {
+    padding-left: 7px;
+    background-color: #99CC66;
+    width: 0px;
+}
+
+div.targets {
+    text-align: right;
+}
+
+div.progress {
+    display: inline-block;
+    float: right;
+    margin-bottom: 0px;
+    margin-left: 5px;
+}
+
+div.progress-blank {
+    margin-left: 5px;
+}
+
+.progress {
+    position: relative;
+    height:18px;
+}
+
+.progress span {
+    position: absolute;
+    display: block;
+    width: 100%;
+    color: black;
+    font-size: 8pt;
+ }
+
+#inputAge {
+    width: 75px;
+}
+
+form#target {
+    margin-bottom: 20px;
+}

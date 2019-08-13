@@ -1,0 +1,158 @@
+(recipelab)djr@djr-ThinkPad-T520:~/recipelab/recipelab$ git push origin master
+To ssh://git@github.com/phugoid/recipelab.git
+ ! [rejected]        master -> master (fetch first)
+error: failed to push some refs to 'ssh://git@github.com/phugoid/recipelab.git'
+hint: Updates were rejected because the remote contains work that you do
+hint: not have locally. This is usually caused by another repository pushing
+hint: to the same ref. You may want to first integrate the remote changes
+hint: (e.g., 'git pull ...') before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+
+
+
+Quicky wicky
+------------
+pip install -r requirements.txt
+
+sudo su - postgres
+    createuser --superuser djr
+    exit
+
+psql -f 2015-08-15-rl.sql
+    If you get a message Database "djr" doesn't exist, just run the command createdb while logged in as djr, it creates a djr default db.
+
+
+---------------------------------------------
+
+
+Setting up new django project with Eclipse and git
+
+sudo apt-get install libxml2-dev libxslt1-dev python-dev
+# virtual env
+cd python-env/
+virtualenv --no-site-packages recipelab
+# For some reason it doesn't work well to do "pip install -E recipelab -I package_name", so it from inside virtualenv instead
+source recipelab/bin/activate
+    pip install django
+    pip install inflect
+    pip install django-registration-redux    # the plain django-registration is not supported properly and initial migration fails with django 1.7 +
+    pip install django-crispy-forms
+    pip install xmltodict
+or if you have a requirements file:
+    pip install -r requirements.txt
+
+# csv import
+# pip install csvImporter
+pip install lxml
+pip install django-adaptors
+
+# MySQL no longer! (utf8 is no good because it won't encode 4-byte unicode chars like µ)
+pip install mysql-python
+mysql -u root -p   
+    passwd simtool
+CREATE DATABASE recipelab CHARACTER SET utf8mb4;
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER, LOCK TABLES, CREATE
+TEMPORARY TABLES ON `recipelab`.* TO 'django'@'localhost' IDENTIFIED BY 'recipelab';
+FLUSH PRIVILEGES;
+# Deleting database
+DROP DATABASE recipelab;
+
+# Install/configure postgresql
+sudo apt-get install postgresql pgadmin3 libpq-dev python-dev
+sudo su - postgres
+createdb recipelab
+createuser --superuser djr
+exit
+psql recipelab
+\password djr
+(enter password twice, "recipelab")
+\q
+pgadmin3
+    File -> New Server
+        Name: localhost
+        Host: 127.0.0.1
+        Post: 5432
+        Username: djr
+        Password: recipelab
+source activate
+pip install psycopg2
+
+# Basic PostgreSQL commands
+psql recipelab
+# 
+dropdb recipelab
+createdb recipelab
+
+# SHOW COLUMNS
+\d sr17_data_src
+
+
+# Quick reset of project migrations after deleting database
+rm -f ./*/migrations/*
+# Then comment out the bolted-on apps in project settings.py
+source activate
+python manage.py migrate
+# Uncomment the bolted-on apps, then
+python manage.py makemigrations ndb
+python manage.py migrate ndb
+
+
+# New Eclipse django project - this will generate a skeleton based on the virtualenv's django
+Eclipse -> File -> New -> Other... -> PyDev -> PyDev Django Project
+in the dialog box...
+    Deselect "User default", and set Directory to wherever you want
+    Interpreter -> Click here to configure an interpreter not listed
+        In popup box,
+        Python interpreters -> New
+            Name = Recipelab virtualenv
+            Location = /home/djr/python-env/recipelab/bin/python
+        Make sure you add (select) the eclipse plugin directory from the list of directories in path
+        [Apply]
+    Close the interpreter configuration popup, then select the new interpreter on django wizard popup
+    Select "Add project directory to project path"
+    In database setup box default MySQL port is 3306, host=localhost, other details as per step above
+
+# Set up run configuration
+Eclipse -> Run -> Run configurations...
+    Under PyDev Django in the left-side list, clone an existing configuration
+    Make sure you set Name, Project, and Main Module (using project name)
+Test the run setup - try to reach localhost:8000 in browser.
+
+# django settings for MySQL (no longer used)
+Edit the settings.py file in project root:
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'recipelab',
+        'USER': 'django',
+        'PASSWORD': 'recipelab',
+        'HOST': '127.0.0.1',
+        'PORT': '3306',        
+    }
+}
+
+# django settings for Postgresql
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'recipelab',                      
+        'USER': 'djr',
+        'PASSWORD': 'recipelab',
+    }
+}
+
+# initialize migrations
+cd ~/recipelab/code/
+source ~/python-env/recipelab/bin/activate
+python manage.py migrate
+
+# Create django app
+cd ~/recipelab/code/
+source ~/python-env/recipelab/bin/activate
+python manage.py startapp nutritiondb
+
+# App development cycle
+Make changes to models.py
+python manage.py makemigrations nutritiondb
+python manage.py migrate nutritiondb
+

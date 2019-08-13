@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load staticfiles %}
+
+{% block title %}
+    recipelab analyze
+{% endblock %}
+
+{% block css %}
+    <link href="{% static "analyze/recipe.css" %}" rel="stylesheet">
+{% endblock %}
+
+{% block js %}
+    <script src="{% static "analyze/recipe.js" %}"></script>
+    <script src="/static/lib/jquery-contenteditable-master/jquery.contenteditable.js" %}"></script>
+    <script src="/static/lib/autosize-master/jquery.autosize.js" %}"></script>
+{% endblock %}
+
+{% block page-header %}
+    recipe analyze
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-sm-6 recipe">
+            <form id="recipe-form" action="" method="post">{% csrf_token %}
+                <input type='hidden' id='recipe_id' value='{{ recipe_id }}' />
+
+                <div class="form-group">
+                    <label for="id_name" class="control-label">{% trans "Recipe name (optional)" %}</label>
+                    <input data-role="none" type="text" class="form-control" name="name" id="id_name">
+                </div>
+
+                <div class="checkbox form-group">
+                    <label class="control-label">
+                        <input data-role="none" type="checkbox" id="id_private" name="private"> {% trans "Private" %}
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label for="id_serves" class="control-label">{% trans "Serves" %}</label>
+                    <input type="text" class="form-control" name="serves" id="id_serves" placeholder="{% trans "how many portions" %}">
+                </div>
+
+                <div class="form-group ingredients">
+                    <label for="ingredients-list" class="control-label">{% trans "Ingredients" %}</label><button type="button" class="btn btn-primary" id="add_ingredient">{% trans "Add Ingredient" %}</button>
+                    <em><span id="to_improve">{% trans "double-click any ingredient to verify database match (pink means unverified)" %}</span></em>
+
+                    <ul class="form-control" id="ingredients-list" contenteditable="true"></ul>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">{% trans "Analyze Nutrition" %} <img id="analyze_spinner" src="/static/img/spinner.gif"/></button>
+                </div>
+
+                <div class="form-group">
+                    <label for="id_steps" class="control-label">{% trans "Steps (optional)" %}</label>
+                    <textarea class="form-control" rows="3" name="steps" id="id_steps" placeholder="{% trans "how to make this recipe" %}"></textarea>
+                </div>
+
+            </form>
+        </div>
+
+        <div class="col-sm-6">
+            <div class="row">
+                <div class="col-sm-12 targets">
+                    Daily targets (percentages) are for Female age 30. <button type="button" class="btn btn-primary" id="targets">{% trans "Change Targets" %}</button>
+                </div>
+            </div>
+            <div class="row">
+
+        <div class="col-sm-6 small nutrition">
+            <ul class="nutrition" id="nutrition1"></ul>
+        </div>
+
+        <div class="col-sm-6 small nutrition">
+            <ul class="nutrition" id="nutrition2"></ul>
+        </div>
+
+
+
+            </div>
+        </div>
+
+
+
+
+        <!-- Modal Set Targets -->
+        <div class="modal" id="targetModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="myModalLabel">{% trans "daily nutrition targets" %}</h4>
+                    </div>
+
+                    <form id="target-form" action="" method="post">{% csrf_token %}
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="target_category" class="control-label">{% trans "Category" %}</label>
+                                <select class="form-control id="target_category">
+                                    <option>Female</option>
+                                    <option>Male</option>
+                                    <option>Pregnant</option>
+                                    <option>Breast-Feeding</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="target_age" class="control-label">{% trans "Age" %}</label>
+                                <input type="number" class="form-control" id="target_age">
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
+                                <button type="submit" class="btn btn-primary" id="accept_button">{% trans "Accept This" %}</button>
+                            </div>
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+        </div>  <!-- end Modal -->
+
+        <!-- Modal Add Ingredient -->
+        <div class="modal" id="ingredientModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="myModalLabel">{% trans "add ingredient" %}</h4>
+                    </div>
+
+                    <form id="target-form" action="" method="post">{% csrf_token %}
+                        <div class="modal-body">
+
+                            <div class="form-group">
+                                <label for="id_search" class="control-label">{% trans "Search" %}</label>
+                                <input type="text" class="form-control" name="search" id="id_search">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="id_unit" class="control-label">{% trans "Unit of Measure" %}</label>
+                                <select class="form-control id="id_unity">
+                                    <option>Female</option>
+                                    <option>Male</option>
+                                    <option>Pregnant</option>
+                                    <option>Breast-Feeding</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="id_quantity" class="control-label">{% trans "Quantity" %}</label>
+                                <input type="number" class="form-control" id="id_quantity">
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
+                                <button type="submit" class="btn btn-primary" id="accept_button">{% trans "Add This" %}</button>
+                            </div>
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+        </div>  <!-- end Modal -->
+
+    </div>
+{% endblock %}

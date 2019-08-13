@@ -1,0 +1,9 @@
+
+Production server uses static0 directory to serve out static files, so before uploading the code-base to
+production you have to run manage.py collectstatic to gather all the files.  This is done in the deploy_code.sh script.
+
+Postgresql version or setup must be a little different.  Had to add "HOST":"localhost" to settings.py because
+otherwise I was getting django error screen "Peer Authentication Error" when trying to access the database.
+
+DEBUG=FALSE is set by deploy_code.sh before uploading the code.
+

@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+*~
+settings.py
+django_fastspring/
+.idea/
+sr17/db/

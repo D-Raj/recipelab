@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}recipelab sign-up complete{% endblock %}
+
+{% block content %}
+<div class="container" id="registration_page">
+    <div class="row">
+        <div class="col-md-6 registration-complete">
+
+            <h3>Sign-up completed</h3>
+            <p>
+                An email was sent to your address, with a special link.  Please click on that link to
+                activate your account.
+            </p>
+            <p>
+                <em>If the message doesn't appear in your Inbox within a few minutes, please check your Spam/Junk email folders in case
+                your service provider put it there.</em>
+            </p>
+
+            <!-- store user id in hidden field so it can be picked up by JS code -->
+            <input type='hidden' id='user_id' value="{{ user.pk }}"/>
+            <input type='hidden' id='csrf_update' value="{{ csrf_token }}"/>
+        </div>
+    </div>
+</div>
+{% endblock %}

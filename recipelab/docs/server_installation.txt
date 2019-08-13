@@ -1,0 +1,507 @@
+Setting up a new django powered website on a new linode
+-------------------------------------------------------
+
+ssh root@1.1.1.1
+
+Logged in to linode as root,
+
+aptitude update
+aptitude safe-upgrade --assume-yes
+aptitude dist-upgrade --assume-yes
+adduser djr
+visudo
+
+Add the following line at the bottom:
+
+djr ALL=(ALL) ALL
+
+Test user login and sudo privileges:
+
+su djr
+whoami
+sudo whoami
+
+
+Password-less SSH Access on port 53
+-----------------------------------
+
+On remote machine
+
+mkdir /home/stratos/.ssh
+
+Now, logged in to local machine as djr or whatever dev username you use:
+
+(local) cd ~/.ssh
+(local) scp id_rsa.pub djr@1.1.1.1:/home/djr/.ssh/authorized_keys
+
+Again, logged into linode as root:
+
+chown -R djr:djr /home/djr/.ssh
+chmod 700 /home/djr/.ssh
+chmod 600 /home/djr/.ssh/authorized_keys
+
+At this point log out as root, then log back in as stratos.  You should have password-less login.
+
+(local) ssh djr@stratossystems.com
+
+Change SSH port and disable root ssh login
+
+sudo nano /etc/ssh/sshd_config
+
+In the file, change port number to have SSH on the usual DNS port
+
+    Port 22 -> 53
+    PermitRootLogin yes -> no
+    If you want to disable passwords altogether (rely on keys only), PasswordAuthentication yes -> no
+
+sudo service ssh restart
+
+From this moment forward, you must login using:
+
+(local) ssh -p 53 djr@1.1.1.1
+
+
+Set up firewall
+---------------
+Ref: https://help.ubuntu.com/community/UFW
+
+sudo aptitude install ufw
+sudo ufw enable
+sudo ufw logging on
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw allow 53
+
+
+
+Virtualenv
+----------
+
+On remote machine
+
+sudo aptitude install python-virtualenv
+cd ~
+mkdir python-env
+cd python-env
+virtualenv --no-site-packages recipelab
+source recipelab/bin/activate
+pip install django
+
+sudo aptitude install libxml2-dev libxslt1-dev python-dev
+pip install inflect
+pip install django-registration-redux
+pip install django-crispy-forms
+
+pip install xmltodict
+sudo aptitude install zlib1g-dev
+pip install lxml
+pip install django-adaptors
+pip install psycopg2
+
+Set up DB server
+----------------
+The -C dump option forces creation of new database.  -c will instead add DROP commands to replace an existing db, but you'll have to specify the db name when restoring e.g. psql -d mydb -f db.sql
+
+(local) pg_dump -C recipelab > 2015-08-15-rl.sql
+(local) bzip2 2015-08-15-rl.sql
+(local) scp 2015-08-15-rl.sql.bz2 djr@1.1.1.1:/home/djr/
+
+
+???? createdb recipelab
+createuser --superuser djr
+exit
+psql recipelab
+\password djr
+(enter password twice, "recipelab")
+\q
+source activate
+pip install psycopg2
+
+
+# Install/configure postgresql
+sudo apt-get install postgresql libpq-dev python-dev
+sudo apt-get install python-psycopg2      <---------- ???
+
+bunzip2 2015-08-15-rl.sql.bz2
+sudo su - postgres
+psql -f 2015-08-15-rl.sql
+
+
+
+# Basic PostgreSQL commands
+psql recipelab
+
+
+Deploy the code
+---------------
+
+First, make sure you gather up all the static files into the static0 directory:
+cd /home/djr/recipelab/recipelab
+source ~/python-env/recipelab/bin/activate
+python manage.py collectstatic
+
+
+On remote server
+
+cd /home/djr/
+mkdir recipelab
+
+(local)
+cd /home/djr/recipelab/
+rsync -azhv --delete /home/djr/recipelab/recipelab -e 'ssh -p 53' djr@recipelab.org:/home/djr/recipelab/
+
+
+Automated Code Deployment
+-------------------------
+This gathers the static files, sets DEBUG to FALSE, and RSYNCs the code to the server.
+    /home/djr/recipelab/recipelab/deploy_code.sh
+Don't forget to kick the server as required:
+    sudo /etc/init.d/nginx restart
+    sudo restart uwsgi
+
+
+Web Server
+----------
+
+sudo aptitude install nginx
+sudo ln -s /home/djr/recipelab/recipelab/recipelab/recipelab_nginx.conf /etc/nginx/sites-enabled/recipelab.conf
+sudo /etc/init.d/nginx restart
+
+
+Sitting in recipelab/recipelab/:
+uwsgi --ini recipelab_uwsgi.ini
+
+Get an error message, see /var/log/nginx/error.log
+    no permission to read from the socket
+Remember to close port 8000 on firewall
+
+
+How to restart server
+---------------------
+sudo /etc/init.d/nginx restart
+sudo restart uwsgi
+
+
+
+
+SSL Certificate
+---------------
+
+Opened an account at SSLMate, username/password: phugoid/HB
+
+
+
+
+----------------------
+
+# #######################################################################################
+#      OLD VERSION
+
+class RecipeForm(forms.ModelForm):
+    class Meta:
+        model = Recipe
+        fields = RECIPE_FIELDS
+
+
+class IngredientForm(forms.ModelForm):
+    class Meta:
+        model = Ingredient
+#        fields = INGREDIENT_FORM_FIELDS
+
+    def clean(self):
+        cleaned_data = super(IngredientForm, self).clean()
+        q = self.cleaned_data.get('quantity',None)
+        u = self.cleaned_data.get('unit', None)
+        s = self.cleaned_data.get('sr17', None)
+        old = get_object_or_404(Ingredient, pk=self.instance.pk)
+
+        # Unit: Recompute conversion factor if the unit or food-match has changed
+        #       Warning: we are assuming that the new unit MUST be either an sr17 WEIGHT unit, or grams or ounces.
+        #                there's no way the user can enter an ad hoc unit in the ingredient detail popup (only through the recipe ingredient box, which is handled by recipe_page view)
+        if u != old.unit or s.pk != old.sr17.pk:
+            # Make sure the unit chosen is valid (either matches a WEIGHT entry linked to this FOOD_DES match, or be the unit parsed from the ingredient string, or simple gram/ounce
+            sr17_weight_entries = s.weight_set.all()
+            valid_units = [ w.Msre_Desc for w in sr17_weight_entries ] + DEFAULT_UNITS
+            if not u in valid_units:
+                raise forms.ValidationError('Please choose a unit.')
+
+            # conv_to_grams
+            # We assume the user is overriding the ingredient box text, so we can get the gram weight just from the Quantity entered and the WEIGHT entry selected on the Form
+            matching_weights = s.weight_set.filter(Msre_Desc=u)
+            if matching_weights:
+                w = matching_weights[0]
+                # Given a quantity and an entry in the WEIGHT table, compute grams
+                self.instance.conv_to_grams = q * w.Gm_Wgt / w.Amount
+            else:
+                self.instance.conv_to_grams = table_conv_to_grams[u]
+
+            self.instance.confidence_food = 1.0
+            self.instance.confidence_unit = 1.0
+        self.instance.user_verified = True
+
+
+def get_nutrition_table(recipe):
+    ingredients = recipe.ingredient_set.all()
+    nutrients = NUTR_DEF.objects.all()
+    matrix = {}
+    for i in ingredients:
+        s = i.sr17.nutrients_set.all()[0]
+        if not s:
+            # Skip any ingredient with no food db match
+            continue
+        ingr_nutr = {}
+        for n in nutrients:
+            field_name = nut_def_pk2fields[n.pk]['field_name']
+            value_per_100g = getattr(s, field_name)
+            if value_per_100g:
+                ingr_value = i.quantity * i.conv_to_grams * value_per_100g / 100.0
+            else:
+                ingr_value = None
+            ingr_nutr[field_name]= {
+                'name': nut_def_pk2fields[n.pk]['human_name'],
+                'value': ingr_value,
+                'unit': n.Units,
+            }
+        matrix[i.pk] = ingr_nutr
+    return matrix
+
+
+
+def adjust_energy(val, userprofile):
+    """
+    As per "Dietary Reference Intakes for Energy, Carbohydrate, Fiber, Fat, Fatty Acids, Cholesterol, Protein and Amino Acids" (2002)
+        https://www.iom.edu/Reports/2002/Dietary-Reference-Intakes-for-Energy-Carbohydrate-Fiber-Fat-Fatty-Acids-Cholesterol-Protein-and-Amino-Acids.aspx
+    Subtract 10 kcal/d for males and 7 kcal/d for females for each year of age above 19 years.
+    """
+    age = userprofile.age
+    category = userprofile.target.category
+    if age > 19.0:
+        if category == 'Males':
+            age_factor = 10.0 # KCal/day adjustment for each year above age 19
+        else:
+            age_factor = 7.0
+        return val - (age - 19.0)*age_factor
+    return val
+
+
+def get_target_values(target_model, userprofile):
+    # Retrieve correct target model
+    nutrients = target_model.nutrients_set.all()[0]
+    target_nutr = {}
+    for f in dri_nutrients.keys():
+        val = getattr(nutrients, f, None)
+        if val is not None:
+            if f == 'energy':
+                val = adjust_energy(val, userprofile)
+            target_nutr[f] = val
+    return target_nutr
+
+
+def valid_units(food_des):
+    units = [ w.Msre_Desc for w in food_des.weight_set.all() ]
+    # Add default units, if required, to the bottom of the list
+    for u0 in DEFAULT_UNITS:
+        if not u0 in units:
+            units.append(u0)
+    return units
+
+
+def model_dict(m, field_names):
+    j = {}
+    for f in field_names:
+        j[f] = unicode(getattr(m, f))
+    j['pk'] = m.pk
+    return j
+
+
+def unit_choices(request, pk):
+    return JsonResponse({ 'units': valid_units(get_object_or_404(FOOD_DES, pk=pk)) })
+
+
+def create_or_update_ingredient(description, recipe=None, **kwargs):
+    data = decode(description)
+    data['description'] = description
+    for k, v in kwargs.iteritems():
+        data[k] = v   # description, line_number, user_verified  (using kwargs so we don't set them if they're not supplied to this function)
+
+    # The list of possible sr17 matches is included for convenience, but it's not actually an ingredient field
+    data.pop('sr17_match_pks')
+
+    ingredient = kwargs.get('ingredient', None)
+    if ingredient:
+        for f in data.keys():
+            setattr(ingredient, f, data[f])
+            ingredient.save()
+        return ingredient
+    elif recipe:
+        recipe_model = get_object_or_404(Recipe, pk=int(recipe))
+        return recipe_model.ingredient_set.create(**data)
+    else:
+        i = Ingredient(**data)
+        i.save()
+        return i
+
+
+def ingredient_detail(request):
+    """
+    This view handles the ingredient detail form.
+    It is called whenever the user double-clicks on an ingredient on the recipe form, or when the user submits the
+    ingredient form.
+    """
+    pk = request.POST.get('pk', None)
+    desc = request.POST.get('desc', '')
+    recipe = request.POST.get('recipe', None)
+    if recipe == u'None':
+        recipe = None
+    open = request.POST.get('open', None)  # A flag to let the server know that we're opening the ingredient form, not submitting it!
+    line_number = request.POST.get('line_num', 0)
+
+    if pk is None:
+        # Create new ingredient (rbecipe may not exist yet)
+        i = create_or_update_ingredient(desc, recipe=recipe, line_number=line_number)
+    else:
+        i = get_object_or_404(Ingredient, pk=int(pk))
+        if not open:
+            # Ingredient form has been submitted (user clicked on Accept This)
+            # Only the fields in the ingredient form will be updated on the ingredient instance
+            f = IngredientForm(request.POST, instance=i)
+            if f.is_valid():
+                r = f.save()
+            else:
+                return JsonResponse({ 'errors': f.errors })
+        # If the user is merely opening the ingredient popup, the only reason to modify the ingredient is if he/she changed its description
+        # in the recipe ingredient box since last time the ingredient was saved.
+        elif desc != i.description:
+            # Redo the ingredient lookup and save the result (update)
+            if recipe:
+                recipe = get_object_or_404(Recipe, pk=int(recipe)) # translate pk string into object
+            i.user_verified = False
+            i = create_or_update_ingredient(desc, recipe=recipe, line_number=line_number, ingredient=i)
+
+    output = model_dict(i,INGREDIENT_FIELDS)
+
+    if not i.sr17:
+        # In this case, no matching food item was found at all
+        output['foods'] = []
+        output['units'] = []
+    else:
+        # Customized output of the Unit drop-down box options
+        if i.unit:
+            units = [i.unit,]
+        else:
+            units = ['items (no unit given)',]  # Deal with unitless ingredients
+        ww = i.sr17.weight_set.all()
+        for w in ww:
+            if not w.Msre_Desc == units[0]:
+                units.append(w.Msre_Desc)
+        for u0 in DEFAULT_UNITS:
+            if not u0 in units:
+                units.append(u0)
+        output['units'] = units
+
+        # Get Food Match options for dropdown box, make sure the currently selected match (ingredient.sr17) is first in list
+        data = decode(i.description)
+        sr17_food_pks = data['sr17_match_pks']
+        pks = [ i.sr17.pk,] + [pk for pk in sr17_food_pks if not pk == i.sr17.pk ]
+        foods = FOOD_DES.objects.filter(pk__in=pks[:UI_NUM_FOOD_MATCHES])
+        d = OrderedDict.fromkeys(pks[:UI_NUM_FOOD_MATCHES])      # Scrunch together a list of { pk, description } dicts, in best-match-first order
+        for f in foods:
+            d[f.pk] = f.Long_Desc
+        output['foods'] = [ { 'pk': pk, 'desc': desc } for pk, desc in d.iteritems() ]
+
+        if i.recipe:
+            # Give the user fresh nutrition data
+            output['nutrition_data'] =  get_nutrition_table(i.recipe)
+            output['nutrition_layout'] = nutrition_display_layout
+            target_model = Target.objects.get(pk=286)
+            output['target_data'] = get_target_values(target_model, request.user.userprofile)
+
+    return JsonResponse(output)
+
+
+def recipe_ingredients(recipe, ingredients):
+    """
+    For a given recipe model handle the new ingredients.
+    ingredients is a list of dicts, of the form
+        [
+            { 'pk':pk, 'text':text },
+            { 'pk':pk, 'text':text },
+        ]
+    This function is only called in the process of saving a Recipe.
+    We could simply delete all ingredients and create all-new ones every time the user saves a Recipe,
+    but that would lose any ingredient lookup corrections the user made.
+    """
+
+    # Delete any existing ingredient records do not match any from the new list (removed from recipe by user)
+    pks = [ int(i['pk']) for i in ingredients if i.get('pk',None) ]
+    for removed_ingredient in recipe.ingredient_set.exclude(pk__in=pks):
+        removed_ingredient.delete()
+
+    output = []
+    old_ingr = None
+    for line_number, i in enumerate(ingredients):
+        # Some lines may be blank!
+        description = i.get('text','').strip()
+        if not description:
+            continue
+        pk = i.get('pk', None)
+        if pk:
+            try:
+                old_ingr = Ingredient.objects.get(pk=int(pk))
+                if old_ingr.description == description:
+                    # No change in description so no decoding is required, just use the old ingredient record
+                    old_ingr.line_number = line_number
+                    old_ingr.recipe = recipe
+                    old_ingr.save()
+                    output.append(model_dict(old_ingr, INGREDIENT_FIELDS))
+                    continue
+                else:
+                    # If we get to this line, the ingredient PK doesn't belong to the recipe being saved
+                    # That can happen if we saved the ingredient before we saved the recipe
+                    new_ingredient = create_or_update_ingredient(description, recipe=recipe, line_number=line_number, ingredient=old_ingr, user_verified=False)
+                    output.append(model_dict(new_ingredient, INGREDIENT_FIELDS))
+                    continue
+            except ObjectDoesNotExist:
+                # If PK was invalid
+                pass
+
+        new_ingredient = create_or_update_ingredient(description, recipe=recipe, line_number=line_number, ingredient=old_ingr)
+        output.append(model_dict(new_ingredient, INGREDIENT_FIELDS))
+    return output
+
+
+def recipe_page(request, pk=None):
+    if not request.is_ajax():
+        return render(request, 'recipe2.html', {'recipe_id': pk, })  # empty page, to be filled with data later via AJAX
+
+    if request.method == 'POST':
+        if request.user.is_anonymous():
+            return HttpResponse(_('To run the analyzer again, please log in.'), status=401)
+        if pk:
+            f = RecipeForm(request.POST, instance=get_object_or_404(Recipe, pk=pk))
+        else:
+            f = RecipeForm(request.POST)
+        if f.is_valid():
+            f.instance.user = request.user
+            r = f.save()
+            output = model_dict(r, RECIPE_FIELDS)
+            i = json.loads(request.POST['ingredients'])
+            output['ingredients'] = recipe_ingredients(r,i)
+            output['nutrition_data'] =  get_nutrition_table(r)
+            output['nutrition_layout'] = nutrition_display_layout
+            target_model = Target.objects.get(pk=286)
+            output['target_data'] = get_target_values(target_model)
+            return JsonResponse(output)
+        return JsonResponse({ 'errors': f.errors })
+    else:
+        r = get_object_or_404(Recipe, pk=pk)
+        output = model_dict(r, RECIPE_FIELDS)
+        output['ingredients'] = []
+        for i in r.ingredient_set.order_by('line_number'):
+            output['ingredients'].append(model_dict(i, INGREDIENT_FIELDS))
+        output['nutrition_data'] =  get_nutrition_table(r)
+        output['nutrition_layout'] = nutrition_display_layout
+        target_model = Target.objects.get(pk=286)
+        output['target_data'] = get_target_values(target_model)
+        return JsonResponse(output)
+

@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load sstatic %}
+
+{% block title %}
+    recipelab
+{% endblock %}
+
+{% block css %}
+    <link href="{% sstatic "analyze/recipe2.css" %}" rel="stylesheet">
+{% endblock %}
+
+{% block js %}
+    <script src="{% sstatic "analyze/recipe2.js" %}"></script>
+    <script src="/static/lib/autosize-master/jquery.autosize.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container" id="recipe_form_page">
+    <div class="row">
+        <div class="col-sm-6 recipe">
+            <form id="recipe-form" action="" method="post">{% csrf_token %}
+                <input type='hidden' id='recipe_id' value='{{ recipe_id }}' />
+                <input type='hidden' id='user_id' value='{{ user.pk }}' />
+
+                <div class="form-group">
+                    <label for="id_name" class="control-label">{% trans "Recipe name" %}</label>
+                    <input data-role="none" type="text" class="form-control" name="name" id="id_name">
+                </div>
+
+                <div class="checkbox form-group">
+                    <label class="control-label">
+                        <input data-role="none" type="checkbox" id="id_private" name="private"> {% trans "Private" %}
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label for="id_serves" class="control-label">{% trans "How many servings it makes" %}</label>
+                    <input type="text" class="form-control" name="serves" id="id_serves" placeholder="{% trans "how many servings it makes" %}">
+                </div>
+
+                <div class="form-group ingredients">
+                    <label for="ingredients-list" class="control-label">
+                        <button type="button" class="btn btn-primary" id="add_ingredient"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> {% trans "Ingredient" %}</button>
+                        <button type="button" class="btn btn-default" id="edit_delete">{% trans "Edit/Delete" %}</button>
+                        <button type="button" class="btn btn-default" id="done">{% trans "Done" %}</button>
+                    </label>
+
+                    <div style="clear: both;"></div>
+                    <ul class="form-control" id="ingredients-list"></ul>
+                </div>
+
+                <!--
+                <div class="form-group">
+                    <label for="id_steps" class="control-label">{% trans "Steps (optional)" %}</label>
+                    <textarea class="form-control" rows="3" name="steps" id="id_steps" placeholder="{% trans "how to make this recipe" %}"></textarea>
+                </div>
+                -->
+
+                <div class="form-group" id="main_buttons">
+                    {% if not user.is_authenticated %}
+                        <a class="btn btn-primary" role="button" id="signupmodal">Sign Up</a>
+                    {% endif %}
+                    <a class="btn btn-default" href="{% url "recipe_page" %}" role="button">New Recipe</a>
+                    <button type="submit" class="btn btn-warning">{% trans "Save Recipe" %} <img id="save_spinner" src="/static/img/spinner.gif"/></button>
+                </div>
+
+            </form>
+        </div>
+
+        <div class="col-sm-6">
+            <p style="text-align: center"><strong>Nutrition per serving, as percentages of daily target</strong></p>
+
+            <div class="col-sm-6 small nutrition">
+                <ul class="nutrition" id="nutrition1"></ul>
+            </div>
+
+            <div class="col-sm-6 small nutrition">
+                <ul class="nutrition" id="nutrition2"></ul>
+
+                <div id="targets">
+                    Percentages of daily targets are for<br/>
+                    <span id="target_category_type"></span><br/>
+                    <button type="button" class="btn btn-primary" id="targets"><span class="glyphicon glyphicon-screenshot" aria-hidden="true"></span> {% trans "Change Targets" %}</button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Modal -->
+        <div class="modal" id="targetModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="myModalLabel">{% trans "daily nutrition targets" %}</h4>
+                    </div>
+
+                    <form id="target-form" action="" method="post">{% csrf_token %}
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="target_category" class="control-label">{% trans "Category" %}</label>
+                                <select class="form-control" id="target_category">
+                                    <option value="Females">Female</option>
+                                    <option value="Males">Male</option>
+                                    <option value="Pregnancy">Pregnant</option>
+                                    <option value="Lactation">Breast-Feeding</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="target_age" class="control-label">{% trans "Age" %}</label>
+                                <input type="number" class="form-control" id="target_age">
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
+                                <button type="button" class="btn btn-primary" data-dismiss="modal" id="set_target">{% trans "Set Target" %}</button>
+                            </div>
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+        </div>  <!-- end Modal -->
+
+
+
+        <!-- Modal Add Ingredient -->
+        <div class="modal" id="ingredientModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="myModalLabel">{% trans "add ingredient" %} <img id="ingredient_spinner" src="/static/img/spinner.gif"/></h4>
+                    </div>
+
+                    <form id="ingredient-form" action="" method="post">{% csrf_token %}
+                        <div class="modal-body">
+                            <input type='hidden' id='ingredient_pk' />
+
+                            <div class="form-group">
+                                <label for="search" class="control-label">{% trans "Search" %}</label>
+                                <input type="text" class="form-control" name="search" id="search">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="unit" class="control-label">{% trans "Unit of Measure" %}</label>
+                                <select class="form-control" id="unit">
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="quantity" class="control-label">{% trans "Quantity (2, 1.5, etc.)" %}</label>
+                                <input type="number" class="form-control" id="quantity">
+                            </div>
+
+                            <div class="form-group">
+                                <button type="button" class="btn btn-default fraction" id="done" valstr="½" valnum="0.5">
+                                    <sup>1</sup>&frasl;<sub>2</sub>
+                                </button>
+                                <button type="button" class="btn btn-default fraction" id="done" valstr="⅓" valnum="0.3333">
+                                    <sup>1</sup>&frasl;<sub>3</sub>
+                                </button>
+                                <button type="button" class="btn btn-default fraction" id="done" valstr="¼" valnum="0.25">
+                                    <sup>1</sup>&frasl;<sub>4</sub>
+                                </button>
+
+                                <!-- Chrome on mobile doesn't support the 1/5 and 1/6 characters, and they're rarely used in recipes.
+                                <button type="button" class="btn btn-default fraction" id="done" valstr="⅕" valnum="0.2">
+                                    <sup>1</sup>&frasl;<sub>5</sub>
+                                </button>
+                                <button type="button" class="btn btn-default fraction" id="done" valstr="⅙" valnum="0.1667">
+                                    <sup>1</sup>&frasl;<sub>6</sub>
+                                </button>
+                                -->
+
+                                <button type="button" class="btn btn-default fraction" id="done" valstr="⅛" valnum="0.125">
+                                    <sup>1</sup>&frasl;<sub>8</sub>
+                                </button>
+                                <button type="button" class="btn btn-default fraction" id="done" valstr="⅔" valnum="0.6667">
+                                    <sup>2</sup>&frasl;<sub>3</sub>
+                                </button>
+                                <button type="button" class="btn btn-default fraction" id="done" valstr="¾" valnum="0.75">
+                                    <sup>3</sup>&frasl;<sub>4</sub>
+                                </button>
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
+                                <button type="button" class="btn btn-primary" id="accept_ingredient">{% trans "Add This" %}</button>
+                            </div>
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+        </div>  <!-- end Modal -->
+
+
+    </div>
+</div>
+
+
+
+    <div class="modal" id="form-modal" tabindex="-1" role="dialog" aria-labelledby="signupModal" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    <h4 class="modal-title">Sign up for a free account</h4>
+                </div>
+                <div id="form-modal-body" class="modal-body">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+{% endblock %}

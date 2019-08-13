@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}recipelab My Account{% endblock %}
+
+{% block content %}
+<div class="container" id="user_profile_page">
+
+    <div class="row">
+        <p>
+            Username: {{ request.user }}
+        </p>
+        <p>
+            Age: {{ request.user.userprofile.age }}
+        </p>
+        <p>
+            Status: {{ request.user.userprofile.status }}
+        </p>
+    </div>
+</div>
+
+{% endblock %}

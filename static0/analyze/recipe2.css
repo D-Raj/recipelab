@@ -1,0 +1,93 @@
+
+#main_buttons {
+    text-align: right;
+}
+
+#target_type {
+    text-align: right;
+}
+
+.ui-autocomplete {
+    z-index: 5000;
+}
+
+#ingredients-list li {
+    list-style-type: none;
+    text-align: left;
+    border-bottom: 1px solid #ccc;
+    display: block;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+ul#ingredients-list {
+    height:auto;
+    overflow:auto;
+    padding-bottom: 25px;
+}
+
+ul.nutrition {
+    list-style: none;
+    padding-left: 0px;
+}
+
+ul.nutrition ul {
+    list-style: none;
+    padding-left: 20px;
+}
+
+.nutrient-value {
+    float: right;
+}
+
+div.progress {
+    display: inline-block;
+    float: right;
+    margin-bottom: 0px;
+    margin-left: 5px;
+}
+
+div.progress-blank {
+    margin-left: 5px;
+}
+
+.progress {
+    position: relative;
+    height:18px;
+}
+
+.progress span {
+    position: absolute;
+    display: block;
+    width: 100%;
+    color: black;
+    font-size: 8pt;
+ }
+
+ul.nutrition li {
+    border-bottom: 1px solid black;
+    padding-top: 3px;
+    padding-bottom: 2px;
+}
+
+ul.nutrition > li {
+    font-weight: bold;
+    padding-top: 5px;
+}
+
+div#targets {
+    text-align: right;
+    background-color: #e1e1e8;
+    padding: 15px;
+    margin-top: 25px;
+}
+
+button#targets {
+    margin-top: 10px;
+}
+
+li.mute {
+    font-weight: normal;
+    color: lightgrey;
+}
+

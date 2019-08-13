@@ -1,0 +1,19 @@
+{% load crispy_forms_tags %}
+<!-- Modal version of registration form -->
+
+
+<!-- Borrowed from https://github.com/pydanny/django-registration-bootstrap/blob/develop/registration_bootstrap/templates/registration/registration_form.html
+     to marry Bootstrap to django via crispy_forms
+-->
+
+<form class="" method="post" action="{% url 'registration_register' %}">
+    {% csrf_token %}
+    {{ form|crispy }}
+    <div class="control-group">
+        <div class="controls">
+            <button type="submit" class="btn btn-primary">Sign up</button>
+            <p><small>By clicking 'Sign Up', you agree to the <a href="{% url "terms" %}">Terms of Service</a> and <a href="{% url "privacy" %}">Privacy Policy.</a></small></p>
+        </div>
+    </div>
+</form>
+

@@ -1,0 +1,430 @@
+
+Fraction input
+    Current quantity box lets non numbers through, which causes an error on lookup.  Force input type to number.
+        Strange - accept_ingredient function should be parsing number...  Maybe the float function is too accepting.
+    Fraction buttons should put fraction in box...
+
+Try without signup
+    Done! Keep recipe during signup process?  Not compatible with django-registration?
+    Done! Bypass the problem by storing the recipe fields in a cookie and then restoring them after login?
+    Done! Store user id in '#user_id' if registration form validated OK.
+    Done! Also, don't let user save target unless registered.
+    Done! Nav bar visibility : My Recipes and Logout should go visible, Log In should go hidden.
+    Done! Make everything visible in base.html and then turn on/off the options using jQuery visibility, kludge.
+    Done! CSRF token is invalid after login using modal window - capture it from returned html after registration and update the hidden form control?
+    Done! Change Target buttons should give a warning to sign up.
+
+Sign-up technicalities
+
+User Account Page
+
+User Guide Page
+
+Plans page (add to top-level nav, if not logged in)
+
+
+
+Project restart - where are we at?
+    Done! Remote server is not running - I think I need to add wsgi server to startup programs...  make sure permissions setup is secure.
+    Done! Must deploy as HTTPS (get certificate and set up nginx).
+    Done! Add disclaimer about nutrition to the Terms page.
+
+    Freemium model to be rethought.
+        Maybe: Trial, TrialEnded and Subscriber types.  TrialEnded can see their saved Recipes but not save new ones (just disable button).
+        Also, disable the "My Recipes" button if the Trial is expired - a bit nasty?
+
+        Type      Trial    Guest       Subscriber
+        -----------------------------------------
+        Duration  7 days   unlimited   1 year
+        Save      Yes      No          Yes
+
+    Subscription
+        For activated and changed callbacks, retrieve the subscription details and update the subscription expiry date.
+
+    Signing up
+        Done! Set up corporate email
+        Done! Test sign registration page
+        Done! activation-related templates need some bootstrap finesse (especially div.container)
+              Text should be made user friendly as well!
+        Creating a new account via registration doesn't create a userprofile or assign a default target...  maybe that's what's causing New Recipe page to throw lots of errors.
+        Should not be possible to request more than one free trial or account from a single email address.
+        You should not get registration page if you are already logged in...  Maybe redirect?
+        Forgot password
+        Change password
+        User status -> subscription at end of free trial
+        Pricing page
+
+    When registering a new user:
+        create new user profile, attach default nutritional target
+        set user profile status to trial, and record user join date
+        when using any page, verify that user is valid (if it's a trial user, check join date)
+            Redirect to sorry page if subscription is not valid.
+        view for fastspring callback will update user profile status - get callback after subscription changes (will have user ID as reference number)
+        make sure the support email address is valid, in case there are any issues
+        no need to hold subscription data?
+
+    Need a "My Account Details" page, linked to from Navbar.
+        Nice to have: Need a process for changing email address - the userprofile table could hold the new email and a link gets emailed out to the new address - upon confirmation click that new email becomes effective...?
+
+    GO PRO! (?)
+        Consider adding an Add Recipe button.
+            To make this work efficiently, should snapshot the nutrition values whenever you save a recipe and store them in?
+            Nutrients table with a Foreign Key linked to the recipe.
+            Add recipe should open a popup where you select the number of servings...
+            Add a radio button to select Recipe or Menu.
+
+    Nice to get energy balance (fat / protein / carb).
+
+    Would be nice if it prevented you from adding the same ingredient twice - just replace the existing one if that occurs.
+        Solo mode doesn't quite work correctly when there are two of the same ingredient - they both get used to calculate nutrition, but only one of them is non-blanked out.
+
+    Values don't add up.  For instance, the different fat type values don't add up to the total amount of amount.
+        To avoid number that don't add up, hide the total carbs and total fat numbers?
+
+
+    ---
+
+    Better DB matches
+        Add a field to FOOD_DES which contains the singularized form of each word in Long_Desc.  That way we're matching singular vs. singular at all times.
+
+    Weird back-button behavior:
+        Double-click on an ingredient to get modal popup.
+        Close modal popup.
+        Click on New recipe.
+        Click on back-button.
+        You get the json data from the food match box!
+
+
+    ---------------------
+    Word lookup ???
+    Add a new table - Words
+    This will have many-to-many relationship with sr17 - the many to many entries will each have a weight representing the comma-sep distance
+    Will have a many-to-many relationship with ingredients
+    Each word in Words will be singularized, and the word field will be indexed.
+    Should cover issues:
+        All 'words' have been singularized, but this is not true of the sr17 entries.  Cherry will not match cherries in database!
+        Handle multi-word food term aliases.
+        Deal with spelling mistakes - maybe use a plugin?
+
+    ---------------------
+
+    Missing Omega 3,6.
+        Not so easy, according to:
+            http://discourse.soylent.me/t/making-sense-of-usda-database-essential-fatty-acids-18-3-undifferentiated-etc/18662/3
+        Some acids are listed separately, can you simply sum them?
+            EPA, DHA...?
+
+    Should have option to disregard an ingredient - this might turn it yellow?
+
+
+
+----------------------------------
+
+    
+Done:
+    Easy: Length of entry should lower the priority a bit.
+    Easy: plural form of word should work the same way.
+    Easy: Get a bingo boost if the first word in the entry matches one or more of your words.
+        Lower priority if you have additional non-matching words...?  Top hit for "orange juice" is "Orange Pineapple Juice Blend"
+    Easy: we now attempt to pluralize, we should singularize as well.  Do this for number words and units as well!!!
+
+	You can easily have two numbers in a row: "2 dozen", "three quarters", "one third".
+
+	Handle fractions.
+	
+	>>> parse_numbers_words('five testing one two three')
+	('five testing two three', 1.0, ['two', 'three'])
+	    Since we're checking the number_terms in order, the priority is given to "one" instead of "five".
+	        We should be searching in ingredient string word order!
+	
+	    Just singularize every word in the search string before further action - avoid the overhead of checking both singularized and pluralized words.
+
+    Must match unit and quantity terms as full words and not substrings, to avoid matching the l in apple.
+        unit terms can have their words in any order - number words must be in correct order
+
+    Check food aliases using whole word match (single word only is supported)
+	
+    Handle number + fraction, like "2 1/2" and "2½"
+
+    Tying it all together with FOOD_DES
+#        Mass unit found in s, simply use that.
+#        Vol unit found in s, get best ingredient match
+            check all entries in WEIGHT against s
+                try to match adjectives like shredded first (what's left after you remove quantity-only words from a WEIGHT entry)
+                If you don't find a "great match", look for any volume units in WEIGHT entries - grab the first one you find
+                what if there are no volume units in WEIGHT entries? Look for non-volume units that are still in quantity_only_terms, try to find match (e.g. 'can')
+                Finally, check if 'piece' is the effective unit - try to match first comma-sep term of WEIGHT entry with FOOD_DES.Long_Des.
+
+    Easy: boost for if any comma-sep term matches "raw" exactly.
+
+    Test total_conversion and new version of food_parse.
+
+	Volume/mass
+	Must be able to convert between any user-entered quantity to: 1) preferably a unit in the lookup table, or  2) grams.
+	Implementation: 
+	    Make a new conversion table.  Best-match between the user-entered quantity to that conversion table, and best-match the FOOD_DES entries to that table too.
+	        What if the user-entered quantity units match an entry in the WEIGHT table for that FOOD_DES item directly - no need for best-match...
+	        If user entered volume, and sr17 has mass only, convert based on assumed density of water...?
+	    If the first comma-sep word in the WEIGHT entry is contained in the FOOD_DES entry, assume that WEIGHT entry is for "item".
+
+    Current approach for getting sr17 food list in ingredient detail view will fail if we tweak the match logic to the point where
+    the stored ingredient-food match item no longer shows up in the top 50 sr17 entries.
+
+http://stonedesigns.net/2013/02/creating-an-editable-list-with-html5-jquery/
+    Doesn't split up content with carriage returns that you paste in
+    Should be able to add icons and links...?  Maybe just using css styling
+    
+    You can detect content chances using this:  http://stackoverflow.com/questions/1391278/contenteditable-change-events
+    Apparently the "on" works for IE11+, but why not use more basic jQuery?
+    
+    $('body').on('focus', '[contenteditable]', function() {
+        var $this = $(this);
+        $this.data('before', $this.html());
+        return $this;
+    }).on('blur keyup paste input', '[contenteditable]', function() {
+        var $this = $(this);
+        if ($this.data('before') !== $this.html()) {
+            $this.data('before', $this.html());
+            $this.trigger('change');
+        }
+        return $this;
+    });
+
+    Better: https://github.com/makesites/jquery-contenteditable/blob/master/jquery.contenteditable.js
+
+    Can you decorate the li with classes, and make them clickable?
+
+Ingredients widget - jQuery mobile editable list
+    Hitting enter key adds item to list on stand-along page, but collapses the widget on recipelab page.
+    Need to add icons to the left of ingredients to indicate their status - looking up, success, failure. - add img tag inside list item (see docs)
+    Start ajax lookup when the item gets added to the list.
+    Make ingredients clickable - get a modal popup with details and/or how to fix.
+    Edit button has blue glow and holds focus after you click on it (it changes to Done).
+    Optional: Make it not collapsible: according to docs, it must currently be in a container with data-role="collapsible"
+    After creating or deleting new item, should call a callback() - this will fire up ajax call and/or modify the nutrition matrix so far.
+    Should come up in edit mode if you're adding new, or in view mode if you're viewing existing recipe.
+
+    Currently getting brand name items in lookup for "1 cup sugar". Fixed - now using decode function instead of parse_food to get rid of "1 cup", and decreased brand name min chars from 3 to 2.
+
+    Make sure we're ignoring single letter words, can easily be caused by apostrophes...? Fixed
+
+    Db lookup
+        for "3 eggs", "Egg, yolk, dried" ranked higher than "Egg, whole, raw, fresh"   - maybe "whole" should be added to the cooking-word list
+
+    Unit for ingredient detail view
+
+    Submit ingredient PKs along with the recipe form, don't look up ingredients that have no changes.
+
+    Unit shows up as "None" on tooltip if none was found (for egg).
+        Why doesn't it match "large" for egg?
+
+    The colour-coding of ingredients on the recipe form should simply correspond to whether the user has checked them!
+        Current implementation is one-better than that!  user-verified is green, good match is yellow and poor match is red
+
+    If you select another ingredient on the popup, and the matched unit is still available on the new ingredient, use it (instead of defaulting to the first unit in the box).
+
+    Would be nice if changing sr17 didn't remove
+
+    Refresh the colour in the ingredient box when you close the ingredient detail popup!
+
+    Close the ingredient popup box after a successful save (Accept Match).
+
+    Validation rules - what if you change sr17 and don't select a new unit?
+
+    Add a view for updating the unit drop-down box whenever you change the food match choice.
+
+    Units: if the user specifies a unit in the ingredient lookup form, we need to force this to be used.
+        NO NEED - if you know the WEIGHT entry, you can get conversion factor without parsing at all: need to modify parse_units to accept a WEIGHT entry - avoid parsing units if we know for sure what to use.
+        OK - need to add a weight entry field to the ingredient model to record this match
+        OK - The values in the drop-down box should not be the pks of the WEIGHT entries, it's more flexible to keep make them text - we can add default weight units, etc that have no WEIGHT record.
+
+    Also, lock the ingredient list for editing while the ingredient lookup form is open.
+        No need since we're using modal popup.
+
+    What to do if the user clicks on an ingredient that doesn't have a PK yet?
+        DECISION: Simplifies things considerably if this is not allowed to happen.  <==============
+        It would be nice if double-clicking on any ingredient saved it (even if a recipe pk is not yet available),
+        that way you could tweak the text of the ingredient and then double-click to see the match, without clicking on Anaylyze nutrition again.
+
+    If you change an ingredient in the ingredient box after running Analyze, then click ingredient detail view, it should check if there's any change
+    in the description and parse it if so, before returning the ingredient form values.
+
+    Quantity shows up in both places - what if you change the quantity in the ingredient lookup form, then in the recipe form!?!?!
+
+    Make sure that if you created a new ingredient, you set the PK attribute of the li on the recipe page when you're done.
+    Make sure that if you have a bunch of ingredients created with no recipe attached, that you attach the recipe if/when it finally gets created.
+        Decision is that you have to hit Analyze Nutrition before you can open an ingredient in popup.
+
+    Give message about double-clicking on ingredients only once you have a recipe PK
+
+    If you create a new line by hitting enter at the end of an existing ingredient line, it seems to inherit the same confidence-class
+    as the ingredient you hit enter on - that's not correct - you should only get confidence class on a saved ingredient.  The solution
+    is to check for a new blank <li> on each edit to the ingredient box and strip it of any classes.
+
+    Copying text from ingredient box and then pasting it back is not creating multiple <li>s.
+        Could not reproduce.
+
+    Ingredient box: If the user deletes everything and then backspaces, they delete all li's and nothing makes sense anymore.
+
+    Error handling:
+        If you change description of an existing ingredient to something with no db match, then double-click on it,
+        you get an error returned via JSON - this should be displayed to the user (and the Accept Match key should be disabled).
+
+    Thoroughly test failures:
+        Totally unrecognized ingredient words.
+        No quantity value - default to 1?
+
+    Need our own human-readable name for each nutrient.
+
+    We're not dividing by the number of servings yet!
+
+    It's unacceptable to get the big red warning when you double-click on an ingredient (from previous error).
+
+    Serves should default to 1 so that you can use the recipe form to experiment with single ingredients.
+        1 is the model default, but this is not getting loaded when you open a blank recipe form because we're not sending the django ModelForm (just the blank template).
+        Ugly hack - just setting it from JS.
+
+    Modifying an ingredient using the popup should automatically recalculate the nutrition table.
+
+    If you change an ingredient description, it should remove the "verified" flag and turn it back to pink.  Right now, it remains verified.
+        Items with zero database match are not showing up in PINK!!!
+
+    Escape double-quotes when putting data into attributes, for instance in values for drop-down box options on ingredient form.
+
+    Need to update the pk attribute in the recipe box after creating a new ingredient on-the-fly.
+        How to know which <li> to use?  Maybe store a reference to the li when you open the ingredient popup?  That's reasonable...
+        Use line_num which comes back with data[].
+
+    Would be nice to be allowed to double-click on a new ingredient as soon as you type it in...
+        Must consider the case where there is no recipe id yet...  Save the ingredient, but later resave it when the ingredient gets analyzed, associating it with that recipe.
+        Right now, ingredient <li>s are only made clickable during recipe form population. No way to attach an even to an <li> before the user creates it - must attach it afterward, by continuously checking for changes in div.
+
+    Would be nice if ingredients turned pink as you edit the ingredient box, not only after you hit Analyze.
+        Must compare state of each li after edit event - maybe just store the li's in an object (by pk) to record state.
+            Or just clone the jQuery object wrapping the UL.
+
+    If you click Analyze Nutrition on a recipe that's never been saved but the ingredients have been looked up, it will re-create those ingredients, not keep the confidence,etc. ingredient fields.
+        Confidence is OK now, but not sr27 match.
+        Also seems the nutrition table is empty.
+
+    Modifying the text of an existing ingredient doesn't change its confidence level back to low (no server side activity involved).
+        May have to maintain a clone of the ingredients <ul> after all.
+
+    Change description of verified ingredient - it goes pink.  Then hit Analyze Nutrition - it goes back to white!!!
+
+    Be sure to remove double-click event handler if you delete all the characters on a line in the ingredient box.
+        Fixed, using jQuery .unbind()
+        If you completely remove the <li> using delete or backspace, there's nothing to click on.
+
+    parse_food should be clever enough to exclude unit-related words now!
+        problem is that unit-related terms includes multi-word entries; remove these from the string before splitting into words?
+        fix - enough to use "quantity_only_words" list, which consists of single words only.
+
+    Why is "lemons, raw, etc"  matching better than "lemon grass (citronella)" for the search "lemon grass"?  Is it an issue with singularization?
+        Bingo (all words in comma-sep position) is over-powering the "number of words matched" factor
+        Fix: reduce bingo k factor from 100.0 to 50.0.
+
+    No validation on serving number before using it.
+
+    Might be nice to have an "Updated..." message that goes away, anytime the nutrition table gets hit.
+
+    If you have a single ingredient, or if you're in solo mode, it should show N/A for any missing nutrient values....?
+
+    Serious bug - on recipe 21, there are a number of squished <li>'s that still have PKs attached although there's no text in them!  These will count toward nutrition!
+        Can't reproduce - maybe these ingredients with blank descriptions come from dev experiments...
+
+    Solo mode.
+        OK: Maybe install solo buttons after you click Analyze Nutrition, and remove them when you edit the ingredient box in any way.
+        OK: CSS to darken the ingredients not being solo'd.
+        OK: Clicking solo a second time (or clicking another solo button, or clicking Analyze Nutrition) should unsolo the solo.
+        OK: Remove solo buttons if you edit the recipe box in any way.
+            OK: We might not be removing buttons when user creates a new line.
+        OK: Removing solo buttons should unsolo the box!  Otherwise we don't have a practical way to get out of solo mode...
+        OK: Double-clicking an ingredient or hitting Analyze nutrition should unsolo the box the box, because we are re-displaying the nutrition quantities without solo.
+            OK: Maybe it's sufficient that if display_nutrition is called without a solo pk, it unsolos the box...
+
+    Message about double-clicking on pink ingredients should always be there (not just after the ingredient box gets loaded by ajax call.
+
+    IU units for Vitamin A and D, while the targets are in terms of grams.
+        Solution is to use "vitamin_a_rae" so it's compatible with the DRI targets, and
+        convert Vitamin D from IU to Grams in the Nutrition table (the tabulated form of SR27, used in this project).
+
+    Percentages (targets).
+        Break out nutrient_set into a separate table?  That would standardize things...  Also nice to leave FOOD_DES alone.
+            Link it to SR17 or to a table of target entries.
+            User profiles <-> target table must have a two-directional relationship...  User profile will point to the specific target set to use.
+
+    No target for energy
+        kcal    DRI tables don't have it, use the DRI report 2005
+        fat     DRI tables don't have it, use DRI report
+        starch  Carb target instead?
+        sugar   Carb target instead?
+        https://www.iom.edu/Reports/2002/Dietary-Reference-Intakes-for-Energy-Carbohydrate-Fiber-Fat-Fatty-Acids-Cholesterol-Protein-and-Amino-Acids.aspx
+
+    Width of bars is wrong for anything less than about 20%.
+
+    Next step is to get the ingredient popup form to validate correctly and transfer accepted ingredient into the main ingredient box.
+
+    Any unavailable values should be sent from the server as null, and displayed in browser as N/A
+
+    Can we dispense with the Calculate Nutrition button?  Clearly, it has to be recalculated any time the ingredient box changes...
+
+    Changing number of servings should force recalc of nutrition table!
+    Deleting an ingredient should also trigger recalculation.
+
+    Right now, we don't show target/percentage bars for nutrient values that are not available (N/A).  Should probably show the
+    bars at all times, and just display 0% or N/A on mouse-over for those.
+
+    The many aliases of fat:
+        nonfat, non-fat, non fat, lofat, low-fat, lo-fat, lowfat, low fat, etc.
+        This problem is less important now with the Add Ingredient approach.
+
+    Problem getting nutrition from saved recipe's ingredients - the WEIGHT.FOOD_DES doesn't match i.sr27...
+        Critical bug fixed.
+
+    Anything that calls calculate_nutrition() without passing parameters should clear the solo mode as well - should calculate_nutrition() take care of this?
+        Add ingredient and Edit/Delete should remove solo mode.
+        Make sure solo mode works properly in conjunction with setting a new target, etc.
+
+    Ingredient box is not getting taller to accommodate ingredients added, even though autosize is called on the ul#ingredients-list
+
+    Double-check that calculated values (for kcal) are correct (based on age).
+
+    Always adjust ingredients by Refuse amount (skin, bones, etc.) using percent refuse in FOOD_DES.
+
+    Poor error messages to user - should be clear if you can't reach the site, if the server throws an error, etc.
+
+    Title of page should be updated as per recipe title if available.
+
+    Saving and reloading page results in doubling the ingredient list!
+
+    Let user save a recipe with no ingredients?  Why the hell not.
+
+    Delete buttons to appear on Recipe list page, need a delete view as well.
+
+    Nav bar link to create new recipe?  Or a green button everywhere?
+
+    Selling points:
+        Only latest US gov food data and daily nutrition targets, no user data
+        Privacy
+        Easiest UI for entering ingredients
+        Solo mode
+
+    For My Recipes list, show some digest of the ingredients if no title is given...
+        Or make the title non-optional <----
+
+    Basic security - save only your own recipe, load only recipes you own or are shared.
+        User should only have permission to see/edit his own recipes, or to view shared recipes.
+        What about saving someone else's recipe into your own account?  Clone the recipe and ingredient records under new user?
+
+Quick deployment!
+    Done! The user profile page is useless, either hide the link from top-level nav or improve it.
+    Done! Add a clear note at the top of nutrition table that it's PER SERVING
+    Done! Login redirect should be to New Recipe page if there's nothing saved?
+    Done! Get Started button should send to same as login redirect.
+    Nope! Hide the Save button?
+    Done! Add Google Analytics
+    Done! Hide footer links
+    Done! Add a New button?
+    Done! Hide other top-level nav
+

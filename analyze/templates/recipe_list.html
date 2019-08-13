@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load sstatic %}
+
+{% block title %}
+    recipelab
+{% endblock %}
+
+{% block css %}
+    <link href="{% sstatic "analyze/recipe_list.css" %}" rel="stylesheet">
+{% endblock %}
+
+{% block js %}
+    <script src="{% sstatic "analyze/recipe_list.js" %}"></script>
+    <script src="/static/lib/autosize-master/jquery.autosize.js" %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container" id="recipe_list_page">
+    <div class="row">
+        <div class="col-sm-12" id="recipe-list">
+
+            <a class="btn btn-primary" href="{% url "recipe_page" %}" role="button">Create New</a>
+            <button type="button" class="btn btn-default" id="edit_delete">{% trans "Edit/Delete" %}</button>
+            <button type="button" class="btn btn-default" id="done">{% trans "Done" %}</button>
+
+            <ul id="recipes">
+                {% for recipe in recipe_list %}
+                    <li pk="{{ recipe.pk }}"><a href="{% url "recipe" recipe.pk %}">{{ recipe.name }}</a></li>
+                {% endfor %}
+            </ul>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

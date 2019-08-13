@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load sstatic %}
+
+
+{% block title %}recipelab Home{% endblock %}
+
+{% block js %}
+    <script src="{% sstatic "recipelab/recipelab_home.js" %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <div class="row">
+        <div class="col-md-7">
+            <img class="img-responsive" src="/static/img/home_chef_665w.jpg" />
+        </div>
+        <div class="col-md-5" id="main_slogan">
+            <h1><strong>recipelab</strong></h1>
+            <p>
+                A free, powerful recipe analyzer and nutrition calculator.
+            </p>
+            {% if not user.is_authenticated %}
+                <a class="btn btn-lg btn-primary" id="signupmodal">Sign Up</a>
+            {% endif %}
+            <a class="btn btn-lg btn-default" href="{% url "recipe_page" %}" href="{% url "recipe_page" %}">Try it</a>
+        </div>
+    </div>
+</div>
+
+<div class="content" id="feature_container"><div class="container">
+    <div class="row" id="features">
+        <div class="col-md-4">
+            <img src="/static/img/search_ingredient2.png" />
+            <h3>
+                Easy
+            </h3>
+            <p>
+                Create new recipes and get detailed nutritional information
+            </p>
+        </div>
+        <div class="col-md-4">
+            <img src="/static/img/nutrition_table2.png" />
+            <h3>
+                Accurate
+            </h3>
+            <p>
+                <strong>recipelab</strong> uses only the latest and most accurate food data from the USDA
+            </p>
+        </div>
+        <div class="col-md-4">
+            <img src="/static/img/ingredient_solo2.png" />
+            <h3>
+                Experimental
+            </h3>
+            <p>
+                Compare recipes, try substitutions, and learn about each ingredient's nutritional value
+            </p>
+        </div>
+    </div>
+
+</div></div>
+
+
+    <div class="modal" id="form-modal" tabindex="-1" role="dialog" aria-labelledby="signupModal" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    <h4 class="modal-title">Sign up for a free account</h4>
+                </div>
+                <div id="form-modal-body" class="modal-body">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

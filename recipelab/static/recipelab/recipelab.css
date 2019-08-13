@@ -1,0 +1,73 @@
+
+body {
+    padding-top: 90px;
+}
+
+.faded {
+    color: #9d9d9d;
+}
+
+#free-trial {
+    padding-left: 5px;
+}
+
+#feature_container {
+    background: #e5e5e5;
+    margin-top: 50px;
+    padding-bottom: 100px;
+}
+#features h3 {
+    font-weight: bold;
+}
+
+#features div {
+    text-align: center;
+}
+
+#features p {
+    font-size: larger;
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+#main_slogan {
+  padding-top: 60px;
+}
+
+#features {
+    margin-top: 30px;
+}
+
+#copyright {
+    padding-top: 50px;
+    text-align: center;
+}
+
+#footer_container {
+    margin-top: 0px;
+    padding-top: 30px;
+    padding-bottom: 800px;
+    background-color: #363636;
+    color: #959595;
+}
+
+#footer_container a {
+    color: #959595;
+}
+
+.footer_links {
+    list-style: none;
+    padding-left: 0px;
+}
+
+.footer_links_col {
+    text-align: center;
+}
+
+#footer_spacer {
+    height: 80px;
+}
+
+#registration_form, #login_form, #recipe_list_page, #recipe_form_page, #user_guide_page, #user_profile_page, #pricing_page, #support_page, #registration_page {
+    min-height: 1000px;
+}

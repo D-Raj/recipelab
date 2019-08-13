@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+<!-- Borrowed from https://github.com/pydanny/django-registration-bootstrap/blob/develop/registration_bootstrap/templates/registration/registration_form.html
+     to marry Bootstrap to django via crispy_forms
+-->
+
+{% block title %}Registration{% endblock %}
+
+{% block content %}
+<div class="container" id="registration_form">
+    <div class="row">
+        <div class="col-md-6 signup">
+            <h2>{% block header %}Sign up for a free account at <strong>recipelab</strong>{% endblock %}</h2>
+            <form class="" method="post" action="{% url 'registration_register' %}">
+                {% csrf_token %}
+                {{ form|crispy }}
+                <div class="control-group">
+                    <div class="controls">
+                        <button type="submit" class="btn btn-primary">Sign up</button>
+                        <p><small>By clicking 'Sign Up', you agree to the <a href="{% url "terms" %}">Terms of Service</a> and <a href="{% url "privacy" %}">Privacy Policy.</a></small></p>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+ {% endblock %}

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}Log in to recipelab{% endblock %}
+
+{% block content %}
+<div class="container" id="login_form">
+    <div class="row">
+        <div class="col-md-6">
+            {% if form.errors %}
+                <p>Invalid username and password. Please try again.</p>
+            {% endif %}
+
+            <form method="post" action="{% url 'django.contrib.auth.views.login' %}">
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label for="id_username" class="control-label">{% trans "Username" %}</label>
+                    <input data-role="none" type="text" class="form-control" name="username" id="id_username">
+                </div>
+
+                <div class="form-group">
+                    <label for="id_password" class="control-label">{% trans "Password" %}</label>
+                    <input data-role="none" type="password" class="form-control" name="password" id="id_password">
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

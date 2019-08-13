@@ -1,0 +1,15 @@
+
+ul#recipes {
+    list-style: none;
+    padding-left: 0px;
+    margin-top: 15px;
+    margin-bottom: 50px;
+}
+
+ul#recipes li {
+    padding-bottom: 5px;
+}
+
+li button {
+    margin-right: 5px;
+}

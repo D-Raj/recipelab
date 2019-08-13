@@ -1,0 +1,8 @@
+Welcome to recipelab.org!
+
+Please click on this link within {{ expiration_days }} to activate your free trial account:
+
+http{% if request.is_secure %}s{% endif %}://{{ request.get_host }}{% url 'registration_activate' activation_key %}
+
+Sincerely,
+the recipelab team
